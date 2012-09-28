@@ -4,8 +4,11 @@ var MyThirdApp = cc.Layer.extend(
     world:null,
     playerBody:null,
     flyingVelocity:0,
+    rotationAmount:0,
     ctor:function(){
 	flyingVelocity = 0;
+	this._jetSprite = new JetSprite();
+	rotationAmount = 0;
 	
 	var b2Vec2 = Box2D.Common.Math.b2Vec2
 		, b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -35,18 +38,27 @@ var MyThirdApp = cc.Layer.extend(
         fixDef.shape.SetAsBox(20, 2);
 	this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 	
+	
         this.addNewSpriteWithCoords(cc.p(screenSize.width / 2, screenSize.height / 2));
+	this.addNewSprite(cc.p(2, screenSize.height ));
+	
+	
+	this.addNewSprite(cc.p(0, screenSize.height / 2));
 	
 	this.scheduleUpdate();
 
     },
     init:function(){
 	this._super();
+	
+        this._jetSprite.schedule(function()
+            {
+                //this.SetRotatio(playerBody.GetLinearVelocity().y * -3);
+            });
         return true;
     },
     addNewSpriteWithCoords:function (p) {
      
-	this._jetSprite = new JetSprite();
 	this.setTouchEnabled(true);
 	this.setKeyboardEnabled(true);
 
@@ -69,9 +81,11 @@ var MyThirdApp = cc.Layer.extend(
         bodyDef.userData = sprite;
         playerBody = this.world.CreateBody(bodyDef);
 
+	
         // Define another box shape for our dynamic body.
         var dynamicBox = new b2PolygonShape();
-        dynamicBox.SetAsBox(0.5, 0.5);//These are mid points for our 1m box
+        //dynamicBox.SetAsBox(0.5, 0.5);//These are mid points for our 1m box
+	dynamicBox.SetAsBox(0.5, 0.5);
 
         // Define the dynamic body fixture.
         var fixtureDef = new b2FixtureDef();
@@ -81,16 +95,52 @@ var MyThirdApp = cc.Layer.extend(
         playerBody.CreateFixture(fixtureDef);
 
     },
+     addNewSprite:function (p) {
+     
+	var sprite = new GroundSprite();
+	var side = 2;
+	var radio = PTM_RATIO*side;
+	var vertices = [cc.p(-radio, radio), cc.p(radio, PTM_RATIO*1),cc.p(radio, -radio),cc.p(-radio,-radio)];
+	sprite.setVertices(vertices);
+        this.addChild(sprite);
+
+        sprite.setPosition(cc.p(p.x, p.y));
+
+        // Define the dynamic body.
+        //Set up a 1m squared box in the physics world
+        var b2BodyDef = Box2D.Dynamics.b2BodyDef
+            , b2Body = Box2D.Dynamics.b2Body
+            , b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+            , b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape;
+
+        var bodyDef = new b2BodyDef();
+        bodyDef.type = b2Body.b2_dynamicBody;
+        bodyDef.position.Set(p.x / PTM_RATIO, p.y / PTM_RATIO);
+        bodyDef.userData = sprite;
+        var body = this.world.CreateBody(bodyDef);
+
+	
+        // Define another box shape for our dynamic body.
+        var dynamicBox = new b2PolygonShape();
+        //dynamicBox.SetAsBox(0.5, 0.5);//These are mid points for our 1m box
+	dynamicBox.SetAsBox(side, side);
+
+        // Define the dynamic body fixture.
+        var fixtureDef = new b2FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 10.0;
+        fixtureDef.friction = 0.3;
+        body.CreateFixture(fixtureDef);
+
+    },
     onEnter:function(){
         this._super();
     },
     onKeyDown:function(e){
-        
-	if(flyingVelocity < 0.25)
-	    flyingVelocity += 0.05;
+	    flyingVelocity = 1.3;
     },
     onKeyUp:function(e){
-	flyingVelocity = 0.01;
+	flyingVelocity = 0;
     },
     update:function (dt) {
         //It is recommended that a fixed time step is used with Box2D for stability
@@ -115,9 +165,11 @@ var MyThirdApp = cc.Layer.extend(
                 //console.log(b.GetAngle());
             }
         }
-
 	
-	playerBody.ApplyImpulse(cc.p(0,flyingVelocity),playerBody.GetPosition());
+	var pos = cc.p(playerBody.GetPosition().x+0.001,playerBody.GetPosition().y)
+	
+	if(playerBody.GetLinearVelocity().y < 3.5)
+	    playerBody.ApplyImpulse(cc.p(0,flyingVelocity),pos);
 
     }
 });
