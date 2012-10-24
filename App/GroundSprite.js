@@ -1,16 +1,23 @@
 var GroundSprite = cc.Sprite.extend({
     vertices: null,
-    ctor:function(){
-	this.setPosition(new cc.Point(150,150));
+    color:0,
+    width:0,
+    rgb:"",
+    ctor:function(p_vertices){
+    if(p_vertices)
+	   this.setVertices(p_vertices);
+	this.rgb = "rgba("+this.color+","+this.color+","+this.color+",1)";
     },
     setVertices:function(p_vertices){
-	vertices = p_vertices
+	this.vertices = p_vertices;
+    this.width = (this.vertices[1].x)*2;
     },
     draw:function(){
 	this._super();
 	
-	cc.renderContext.fillStyle = "rgba(0,0,0,1)";
-        cc.renderContext.strokeStyle = "rgba(255,255,255,1)";
-        cc.drawingUtil.drawPoly(vertices, 3, true, true)
+	cc.renderContext.fillStyle = this.rgb;
+    cc.renderContext.strokeStyle = "rgba(0,0,0,1)";
+    cc.drawingUtil.drawPoly(this.vertices, 3, true, true);
+    
     }
 });
