@@ -1,16 +1,20 @@
 
 function GroundManager (b2World, gameLayer) {
     this.currentHeight = 1;
-    this.currentInsertPos = cc.p(0,0);
-    this.upsideDown = false;    
+    this.currentHeightTop = 1;
+
+
+    this.upsideDown = true;    
     this._b2World = b2World;
     this._gameLayer = gameLayer;
+    this._bottomObjects = new Array();
     this._topObjects = new Array();
+    this._hills = 0;
 }
 
-GroundManager.prototype.getNextPoly = function(startingHeight) {
-    var randomHeight = Math.floor((Math.random()*14)+1);
-    var randomWidth = Math.floor((Math.random()*6)+1);
+GroundManager.prototype.getNextPoly = function( startingHeight, base, upsidedown ) {
+    var randomHeight = Math.floor((Math.random()*3)+base+1);
+    var randomWidth = Math.floor((Math.random()*3)+1);
     var bottomY = -startingHeight/2;
 
    
@@ -22,7 +26,7 @@ GroundManager.prototype.getNextPoly = function(startingHeight) {
         bottomY = -randomHeight/2;
 	
     var teste = -1;
-    if(this.upsideDown){
+    if(upsidedown){
 	var leftBottomPoint = cc.p(-randomWidth,-(startingHeight+bottomY));
 	var rightBottomPoint = cc.p(randomWidth,-(randomHeight+bottomY));
 	var rightUpperPoint = cc.p(randomWidth,-bottomY);
@@ -42,51 +46,80 @@ GroundManager.prototype.getNextPoly = function(startingHeight) {
 };
 
 GroundManager.prototype.update = function(velocity){
- 
-    var larguraAtual = 0;
+
+    var upsideDown = true;
+
+    if(this._hills > 360)
+        this._hills = 0
+
+    this._hills += 0.02;
+
+    var baseHeight = (Math.sin(this._hills) + 1)*4;
+
+    this.ManageObjects( velocity, this._bottomObjects, baseHeight, upsideDown);
+
+
+    this.ManageObjects( velocity, this._topObjects, 10-baseHeight, !upsideDown);
+    
+};     
+
+GroundManager.prototype.ManageObjects = function( velocity, objects, baseHeight, upsideDown ){
+
+     var larguraAtual = 0;
     var larguraTotal =  cc.Director.getInstance().getWinSize().width;
+    
 
-    for (var i = 0; i < this._topObjects.length; i++) {
+    for (var i = 0; i < objects.length; i++) {
 
-        var body = this._topObjects[i];
+        var body = objects[i];
 
         body.SetPosition( cc.pAdd( body.GetPosition(), cc.p( velocity, 0 ) ) );
       
-        if((body.GetPosition().x + 15 ) < 0){
+        if((body.GetPosition().x + 10) < 0){
             this._b2World.DestroyBody(body);
             body.GetUserData().removeFromParentAndCleanup(true);
-            this._topObjects.splice(i,1);
+            objects.splice(i,1);
             continue;
         }else{
-        larguraAtual += body.GetUserData().width;
+            body.GetUserData().setPosition(cc.pMult(body.GetPosition(),PTM_RATIO));
+            larguraAtual += body.GetUserData().width;
         }
     }
-    while(larguraAtual < (larguraTotal +(15*PTM_RATIO))){
+
+    var currentHeight = 1;
+    if(objects.length){
+        var verts = objects[objects.length -1].GetFixtureList().GetShape().GetVertices();
+        currentHeight = verts[2].y - verts[1].y;
+    }
+    
+    while(larguraAtual < (larguraTotal + 10*PTM_RATIO )){
         
-        var polyVector = this.getNextPoly(this.currentHeight);
+        var polyVector = this.getNextPoly( currentHeight, baseHeight, upsideDown);
 
         var larguraObj = (polyVector[1].x - polyVector[0].x)*PTM_RATIO;
 
         var ultimaPos = 0;
 
-        var ultimoBody = this._topObjects[this._topObjects.length-1];
+        var ultimoBody = objects[objects.length-1];
 
         if(ultimoBody)
             ultimaPos = (ultimoBody.GetUserData().width/2) + ultimoBody.GetPosition().x*PTM_RATIO;
 
         this.currentInsertPos = cc.p(ultimaPos+(larguraObj/2),0);
         
-        var body = this.createGroundBody(polyVector,this.currentInsertPos,false);
+        var body = this.createGroundBody(polyVector,this.currentInsertPos,upsideDown);
 
-        this._topObjects.push(body);
+        objects.push(body);
         
-        this.currentHeight = (polyVector[2].y - polyVector[1].y);
+        currentHeight = (polyVector[2].y - polyVector[1].y);
 
         larguraAtual += larguraObj;
-
+    
 
     }
-};              
+};
+
+
 
 GroundManager.prototype.createGroundBody = function (vertices,position,upsidedown) {
     
@@ -106,7 +139,7 @@ GroundManager.prototype.createGroundBody = function (vertices,position,upsidedow
     var height = Math.max( verticesInPixel[2].y, verticesInPixel[3].y );
 
     if( upsidedown )
-        p.y = p.y - height;
+        p.y = cc.Director.getInstance().getWinSize().height - height;
     else
         p.y = p.y + height;
         sprite.setPosition(cc.p(p.x, p.y));

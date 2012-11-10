@@ -7,7 +7,7 @@
 		frameRate:60,
 		tag:'gameCanvas', //the dom element to run cocos2d on
 		engineDir:'../cocos2d/',
-		appFiles:['MyThirdApp.js','JetSprite.js','GroundSprite.js','GroundManager	.js']
+		appFiles:['MyThirdApp.js','JetSprite.js','GroundSprite.js','GroundManager.js','MainMenu.js','GameOver.js','Box2DHelper.js','LightingOverlay.js']
 	};
 	window.addEventListener('DOMContentLoaded', function () {
 		//first load engine file if specified
@@ -17,5 +17,6 @@
 		s.c = c;
 		s.id = 'cocos2d-html5';
 		//else if single file specified, load singlefile
+
 	});
 })();
